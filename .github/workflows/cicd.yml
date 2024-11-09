@@ -47,7 +47,7 @@ jobs:
         run: aws s3 sync . s3://test-dbt-demo/ --exclude ".git/*"
 
       - name: Upload Logs
-        if: success() && exists('logs/')
+        if: success()
         uses: actions/upload-artifact@v3
         with:
           name: dbt-logs
