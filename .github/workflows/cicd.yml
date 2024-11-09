@@ -1,0 +1,41 @@
+name: dbt CI
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+  SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+  SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+  SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+  SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+
+jobs:
+  dbt_ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Upload logs
+        uses: actions/upload-artifact@v3
+        with:
+          name: dbt-logs
+          path: logs/
+
+      - name: Install requirements
+        run: pip install dbt-core dbt-snowflake
+
+      - name: Install dbt dependencies
+        run: dbt deps
+
+      - name: Run dbt test
+        run:  dbt test --profiles-dir ./
+
+      - name: Run dbt run
+        run:  dbt run --profiles-dir ./
+
+
