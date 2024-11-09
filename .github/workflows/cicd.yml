@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - dev
   workflow_dispatch:
 
 env:
@@ -37,5 +38,31 @@ jobs:
 
       - name: Run dbt run
         run:  dbt run --profiles-dir ./
+      
+      - name: Configure Aws Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{
+            github.ref == 'refs/heads/main' && secrets.AWS_ACCESS_KEY_ID_PRD ||
+            github.ref == 'refs/heads/dev' && secrets.AWS_ACCESS_KEY_ID_DEV 
+          }}
+
+          aws-secret-access-key: ${{
+            github.ref == 'refs/heads/main' && secrets.AWS_SECRET_ACCESS_KEY_ID_PRD ||
+            github.ref == 'refs/heads/dev' && secrets.AWS_SECRET_ACCESS_KEY_ID_DEV 
+          }}
+
+          aws-region: us-east-1
+
+      - name: Install Aws CLI
+        run: sudo apt-get install -y awscli
+        
+      
+      - name: Upload dbt project to s3
+        run: aws s3 sync . s3://test-dbt-demo/  --exclude ".git/*"
+
+          
+      
+
 
 
