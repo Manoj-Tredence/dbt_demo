@@ -20,12 +20,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: Upload logs
-        uses: actions/upload-artifact@v3
-        with:
-          name: dbt-logs
-          path: logs/
-
       - name: Install requirements
         run: pip install dbt-core dbt-snowflake
 
@@ -33,35 +27,28 @@ jobs:
         run: dbt deps
 
       - name: Run dbt test
-        run:  dbt test --profiles-dir ./
+        run: dbt test --profiles-dir ./
 
       - name: Run dbt run
-        run:  dbt run --profiles-dir ./
+        run: dbt run --profiles-dir ./
       
-      - name: Configure Aws Credentials
+      - name: Configure AWS Credentials
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
         uses: aws-actions/configure-aws-credentials@v3
         with:
-          aws-access-key-id: ${{
-            github.ref == 'refs/heads/main' && secrets.AWS_ACCESS_KEY_ID_PRD ||
-            github.ref == 'refs/heads/dev' && secrets.AWS_ACCESS_KEY_ID_DEV 
-          }}
-
-          aws-secret-access-key: ${{
-            github.ref == 'refs/heads/main' && secrets.AWS_SECRET_ACCESS_KEY_ID_PRD ||
-            github.ref == 'refs/heads/dev' && secrets.AWS_SECRET_ACCESS_KEY_ID_DEV 
-          }}
-
+          aws-access-key-id: ${{ github.ref == 'refs/heads/main' && secrets.AWS_ACCESS_KEY_ID_PRD || github.ref == 'refs/heads/dev' && secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ github.ref == 'refs/heads/main' && secrets.AWS_SECRET_ACCESS_KEY_ID_PRD || github.ref == 'refs/heads/dev' && secrets.AWS_SECRET_ACCESS_KEY_ID_DEV }}
           aws-region: us-east-1
 
-      - name: Install Aws CLI
+      - name: Install AWS CLI
         run: sudo apt-get install -y awscli
-        
-      
-      - name: Upload dbt project to s3
-        run: aws s3 sync . s3://test-dbt-demo/  --exclude ".git/*"
 
-          
-      
+      - name: Upload dbt project to S3
+        run: aws s3 sync . s3://test-dbt-demo/ --exclude ".git/*"
 
-
-
+      - name: Upload Logs
+        if: success() && exists('logs/')
+        uses: actions/upload-artifact@v3
+        with:
+          name: dbt-logs
+          path: logs/
